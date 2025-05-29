@@ -52,11 +52,7 @@ torch::Tensor attention_ref(
 }
 
 int main(int argc, char* argv[]) {
-    torch::InferenceMode guard;
     auto device_idx = 0;
-    auto device = torch::Device(torch::DeviceType::CUDA, device_idx);
-    c10::DeviceGuard device_guard(device);
-
     auto batchsize = 64;
     auto seqlen = 64;
     auto nhead = 8;
@@ -64,6 +60,10 @@ int main(int argc, char* argv[]) {
     auto win_l = 16;
     auto win_r = 16;
     auto softmax_scale = 1.0 / std::sqrt(headdim);
+
+    torch::InferenceMode guard;
+    auto device = torch::Device(torch::DeviceType::CUDA, device_idx);
+    c10::DeviceGuard device_guard(device);
 
     auto q = torch::randn({batchsize, seqlen, nhead, headdim}).to(device).to(torch::kHalf);
     auto k = torch::randn({batchsize, seqlen, nhead, headdim}).to(device).to(torch::kHalf);
