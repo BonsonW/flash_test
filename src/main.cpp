@@ -91,9 +91,9 @@ int main(int argc, char* argv[]) {
     auto all_close = torch::allclose(ref_out, flash_out, 0.0, 1e-02);
 
     if (all_close) {
-        fprintf(stderr, "test passed\n");
+        fprintf(stderr, "accuracy test passed!\n");
     } else {
-        fprintf(stderr, "test failed\n");
+        fprintf(stderr, "accuracy test failed!\n");
     }
     
     return 0;
