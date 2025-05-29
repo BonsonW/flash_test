@@ -3,14 +3,6 @@
 #include <optional>
 #include <math.h>
 
-#ifdef USE_CUDA
-#include <c10/cuda/CUDAGuard.h>
-#endif
-
-#ifdef USE_ROCM
-#include <c10/hip/HIPGuard.h>
-#endif
-
 torch::Tensor construct_local_mask(
     int seqlen_q,
     int seqlen_k,
@@ -26,7 +18,7 @@ torch::Tensor construct_local_mask(
     return torch::logical_or(
         col_idx > torch::minimum(row_idx + sk - sq + win_r, sk),
         col_idx < row_idx + sk - sq - win_l
-    ).to(device);
+    );
 }
 
 torch::Tensor attention_ref(
@@ -34,43 +26,36 @@ torch::Tensor attention_ref(
     torch::Tensor &k,
     torch::Tensor &v,
     int win_l,
-    int win_r,
-    torch::Device device
+    int win_r
 ) {
     torch::Tensor local_mask;
     auto seqlen_q = q.size(1);
     auto seqlen_k = k.size(1);
     auto d = q.size(-1);
-    auto scores = torch::einsum("bthd,bshd->bhts", {q / std::sqrt(d), k}).to(device);
+    auto scores = torch::einsum("bthd,bshd->bhts", {q / std::sqrt(d), k});
     if (win_l >= 0 || win_r >= 0) {
         local_mask = construct_local_mask(
             seqlen_q,
             seqlen_k,
             win_l,
             win_r,
-            device
+            scores.device()
         );
         scores.masked_fill_(local_mask, -INFINITY);
     }
         
     auto attention = torch::softmax(scores, -1);
     if (win_l >= 0 || win_r >= 0) {
-        attention = attention.masked_fill(torch::all(local_mask, -1, true), 0.0).to(device);
+        attention = attention.masked_fill(torch::all(local_mask, -1, true), 0.0);
     }
-    return torch::einsum("bhts,bshd->bthd", {attention, v}).to(device);
+    return torch::einsum("bhts,bshd->bthd", {attention, v});
 }
 
 int main(int argc, char* argv[]) {
     torch::InferenceMode guard;
     auto device_idx = 0;
     auto device = torch::Device(torch::DeviceType::CUDA, device_idx);
-
-#ifdef USE_CUDA
-    c10::cuda::CUDAGuard device_guard(device_idx);
-#endif
-#ifdef USE_ROCM
-    c10::hip::HIPGuard device_guard(device_idx);
-#endif
+    c10::DeviceGuard device_guard(device);
 
     auto batchsize = 64;
     auto seqlen = 64;
@@ -86,8 +71,7 @@ int main(int argc, char* argv[]) {
 
     auto ref_out = attention_ref(
         q, k, v,
-        win_l, win_r,
-        device
+        win_l, win_r
     );
     
     auto flash_res = at::_flash_attention_forward(
