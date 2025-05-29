@@ -12,7 +12,7 @@ Accuracy test for `at::_flash_attention_forward` against a modified [reference a
 ## Build with CUDA
 
 ```
-export CUDA_ROOT=/path/to/cuda/root
+export CUDA_ROOT=/path/to/cuda/root # if not using default
 make cuda=1
 ```
 
@@ -20,7 +20,7 @@ make cuda=1
 ## Build with ROCM
 
 ```
-export ROCM_ROOT=/path/to/rocm/root
+export ROCM_ROOT=/path/to/rocm/root # if not using default
 make rocm=1
 ```
 
