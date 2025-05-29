@@ -25,6 +25,6 @@ make rocm=1
 
 ## run
 ```
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/rocm/lib # required or non-default ROCM install
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/rocm/lib # if non-default ROCM install
 ./flash_test
 ```
